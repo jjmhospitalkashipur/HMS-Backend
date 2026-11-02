@@ -36,12 +36,13 @@ class HospitalPatientService {
     const patient = await HospitalPatientModel.createHospitalPatient(patientData as HospitalPatient);
 
     // Auto-create / link a Pathlab patient in the shared DB and store the cross-reference
-    const pathlabPatientId = await crossReferencePatient(patient.toObject ? patient.toObject() : patient);
-    if (pathlabPatientId && !patient.pathlabPatientId) {
-      await HospitalPatientModel.findByIdAndUpdate(patient._id, {
+    const patientDoc = patient as any;
+    const pathlabPatientId = await crossReferencePatient(patientDoc.toObject ? patientDoc.toObject() : patientDoc);
+    if (pathlabPatientId && !patientDoc.pathlabPatientId) {
+      await HospitalPatientModel.findByIdAndUpdate(patientDoc._id, {
         $set: { pathlabPatientId },
       });
-      (patient as any).pathlabPatientId = pathlabPatientId;
+      patientDoc.pathlabPatientId = pathlabPatientId;
     }
 
     return await transformS3UrlsAsync(patient) as HospitalPatientResponseDTO;
