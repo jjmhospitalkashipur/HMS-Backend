@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { getPathlabPatientModel, getPathlabCaseModel } from "@src/libs/pathlabModels";
 
 // Set global transform for all schemas to handle _id serialization
 mongoose.set('toJSON', {
@@ -32,6 +33,11 @@ export default async (): Promise<any> => {
   }
 
   const connection = await mongoose.connect(dbUrl);
+
+  // Register shared pathlab models so they're available across the app
+  // even though pathlab routes live in a separate service.
+  getPathlabPatientModel();
+  getPathlabCaseModel();
 
   return connection.connection.db;
 };

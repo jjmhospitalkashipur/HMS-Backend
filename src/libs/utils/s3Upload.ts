@@ -8,13 +8,22 @@ const SIGNED_URL_EXPIRES = parseInt(process.env.S3_SIGNED_URL_EXPIRES || "3600")
 
 // Create S3 client lazily so env vars are guaranteed to be loaded
 function getS3Client(): S3Client {
-  return new S3Client({
+  const config: ConstructorParameters<typeof S3Client>[0] = {
     region: process.env.AWS_REGION || REGION,
     credentials: {
       accessKeyId:     process.env.AWS_ACCESS_KEY_ID     || "",
       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
     },
-  });
+  };
+
+  // S3_ENDPOINT allows using any S3-compatible provider (MinIO, Cloudflare R2, etc.)
+  // without changing anything else. Leave unset for real AWS S3.
+  if (process.env.S3_ENDPOINT) {
+    config.endpoint = process.env.S3_ENDPOINT;
+    config.forcePathStyle = true; // required for MinIO and most S3-compatible providers
+  }
+
+  return new S3Client(config);
 }
 
 function getBucket(): string {

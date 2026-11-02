@@ -7,7 +7,7 @@ import {
   UpdateHospitalPatientDTO
 } from "../dtos/hospital-patient.dto";
 import { HospitalPatient } from "../models/hospital-patient.types";
-import { getPathlabCasesForHmsPatient } from "@src/libs/utils/crossReferencePatient";
+import { crossReferencePatient, getPathlabCasesForHmsPatient } from "@src/libs/utils/crossReferencePatient";
 
 class HospitalPatientService {
   async createHospitalPatient(
@@ -34,6 +34,16 @@ class HospitalPatientService {
     }
 
     const patient = await HospitalPatientModel.createHospitalPatient(patientData as HospitalPatient);
+
+    // Auto-create / link a Pathlab patient in the shared DB and store the cross-reference
+    const pathlabPatientId = await crossReferencePatient(patient.toObject ? patient.toObject() : patient);
+    if (pathlabPatientId && !patient.pathlabPatientId) {
+      await HospitalPatientModel.findByIdAndUpdate(patient._id, {
+        $set: { pathlabPatientId },
+      });
+      (patient as any).pathlabPatientId = pathlabPatientId;
+    }
+
     return await transformS3UrlsAsync(patient) as HospitalPatientResponseDTO;
   }
 
